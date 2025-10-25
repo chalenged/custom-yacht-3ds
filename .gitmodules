@@ -1,0 +1,12 @@
+[submodule "nest"]
+	path = nest
+	url = https://github.com/lovebrew/nest.git
+[submodule "lua-yaml"]
+	path = lua-yaml
+	url = https://github.com/exosite/lua-yaml.git
+[submodule "classic"]
+	path = classic
+	url = https://github.com/rxi/classic.git
+[submodule "anim8"]
+	path = anim8
+	url = https://github.com/kikito/anim8.git

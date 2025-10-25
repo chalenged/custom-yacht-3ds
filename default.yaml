@@ -1,0 +1,29 @@
+Dice: #Your set of dice, can include any sided dice of at least 2, and you can mix and match (i.e. 2d4 and 3d6)
+  - 6: 5 # The number of faces on the dice, and the number of that dice, so this is 5 six-sided dice
+Scores: #The types of scores you can get, each requires a Value and a Sequence
+  - 3 of a kind:
+    - Value: 0 #Value of 0 means the total value on all dice. Value of -1 means the total value of matching dice, with the highest match being prioritized
+    - Sequence: x,x,x #Sequence is the sequence required, with letters as the substitues. Seperate each required dice with a comma, so this is 3 of the same number.
+  - 4 of a kind:
+    - Value: 0
+    - Sequence: x,x,x,x
+  - Full House:
+    - Value: 25
+    - Sequence: x,x,y,y,y #You can use different letters for different numbers, so this is 2 of the same and 3 of the same
+  - Small Straight:
+    - Value: 30
+    - Sequence: x,x+1.x+2.x+3 #Sequences can also use addition and multiplication (no subtraction, division, or anything else. This is yacht...)
+  - Large Straight:
+    - Value: 40
+    - Sequence: x,x+1.x+2.x+3,x+4
+  - Yacht:
+    - Value: 50
+    - Sequence: x,x,x,x,x
+    - Bonus: 100 #Optional attribute Bonus is how many points you get for each subsequent score. Ignored if not present.
+  - Chance:
+    - Value: 0
+    - Sequence: x
+Bonus: #This is the bonus for singular dice.
+  - Requirement: 63 #You need this much total at least in the singular number section to get the value.
+  - Value: 35
+Rolls: 3 #Number of rolls the player can perform for each round. This includes the initial roll. Set to 0 for infinite (funny)
