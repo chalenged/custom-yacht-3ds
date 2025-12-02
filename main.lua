@@ -4,65 +4,89 @@ anim8 = require 'anim8/anim8'
 Object = require 'classic/classic'
 require 'dice'
 require 'button'
+require 'score'
 local yaml = require 'lua-yaml/yaml'
+local maxDice = 6
 
 local set = yaml.eval([[
 Dice: 
-  - 12: 30
+  - 6: 2
+  - 5: 3
 Scores: 
   - 3 of a kind: 
-    - Value: 0 
-    - Sequence: x,x,x 
+    Value: 0 
+    Sequence: x,x,x 
   - 4 of a kind:
-    - Value: 0
-    - Sequence: x,x,x,x
+    Value: 0
+    Sequence: x,x,x,x
   - Full House: 
-    - Value: 25
-    - Sequence: x,x,y,y,y 
+    Value: 25
+    Sequence: x,x,y,y,y 
   - Small Straight: 
-    - Value: 30
-    - Sequence: x,x+1.x+2.x+3 
+    Value: 30
+    Sequence: x,x+1.x+2.x+3 
   - Large Straight: 
-    - Value: 40
-    - Sequence: x,x+1.x+2.x+3,x+4
+    Value: 40
+    Sequence: x,x+1.x+2.x+3,x+4
   - Yacht: 
-    - Value: 50
-    - Sequence: x,x,x,x,x
-    - Bonus: 100
+    Value: 50
+    Sequence: x,x,x,x,x
+    Bonus: 100
   - Chance: 
-    - Value: 0
-    - Sequence: x
+    Value: 0
+    Sequence: x
 Bonus: 
-  - Requirement: 63 
-  - Value: 35
+  Requirement: 63 
+  Value: 35
 Rolls: 3
 ]])
 
 function printTable(table, _count)
+  if type(table) ~= 'table' then return print(table) end
   _count = _count or 0
   for i, v in pairs(table) do
     local output = ""
     for i=0,_count do output = output.." " end
     if (type(v) == 'table') then
-      if (type(i) ~= 'number') then print(output..i) end
+      print(output..i)
       printTable(v, _count+1)
     else
-      print(output..i..": "..v)
+      print(output..i..": "..tostring(v))
     end
   end  
 end
 
+function copy(obj) -- Deep copy a table, courtesy of https://gist.github.com/tylerneylon/81333721109155b2d244
+    if type(obj) ~= 'table' then return obj end
+    local res = setmetatable({}, getmetatable(obj))
+    for k, v in pairs(obj) do res[copy(k)] = copy(v) end
+    return res
+end
 
+-- duplicate removal courtesy of https://stackoverflow.com/a/20067270
+function remDupe(tab)
+  local hash = {}
+  local res = {}
+
+  for _,v in pairs(tab) do
+     if (not hash[v]) then
+         res[#res+1] = v
+         hash[v] = true
+     end
+  end
+  return res
+end
+--printTable(set)
 
 
 local str, font = "Hello World", nil
 local textDepth = 6
 local time = 0
 local diceimage, diceanim
-local dicelist = {}
+local dicelist, scorelist = {}, {}
 local diceoutline
 local maxdice = 24
-local dicepage = 1
+local dicepage, scorepage = 1, 1
 local buttons = {}
 width = 400
 height = 240
@@ -70,36 +94,57 @@ local dlistoff = 27
 local tablesprites = {}
 local dicenums = {}
 local multidice = false
-if (#(set.Dice) > 1) then multidice = true end
+local curplayer = 1
+local settled = false
+if (#set.Dice > 1) then multidice = true end
 for i, v in pairs(set.Dice) do
-  for i, v in pairs(set.Dice[i]) do
-    print(i.." "..v)
+  for i, v in pairs(set.Dice[i]) do --voodoo magic because it's an ordered list so the dice are always the same order
+  if maxDice < tonumber(i) then maxDice = i end
     for j=1,v do
       table.insert(dicenums, tonumber(i))
     end
   end
 end
 --printTable(dicenums)
+for i, v in pairs(set.Scores) do
+  for j, w in pairs(set.Scores[i])do
+    local name = j
+    local value = 0
+    local bonus = 0
+    local sequence = "x"
+    --print(i)
+    for k, x in pairs(set.Scores[i][j]) do
+      if k == "Sequence" then sequence = x
+      elseif k == "Value" then value = x
+      elseif k == "Bonus" then bonus = x
+      end
+    end
+    table.insert(scorelist, Score(name,value,sequence,bonus,true))
+  end
+end
+
 function reroll()
-      local newlist = {}
-      local toRoll = {}
-      if (#dicelist == 0) then toRoll = dicenums end
-      for i=1,#dicelist do
-        if (dicelist[i].selected) then
-          table.insert(newlist,dicelist[i])
-        else 
-          table.insert(toRoll, dicelist[i].sides)
-        end
-      end
-      dicelist = newlist
-      for i=1,#toRoll do
-        table.insert(dicelist, Dice(toRoll[i],math.random(400-96)+32, math.random(height-96)+32,math.random()*8-4,math.random()*8-4))
-      end
+  local newlist = {}
+  local toRoll = {}
+  if (#dicelist == 0) then toRoll = dicenums end
+  for i=1,#dicelist do
+    if (dicelist[i].selected) then
+      table.insert(newlist,dicelist[i])
+    else 
+      table.insert(toRoll, dicelist[i].sides)
+    end
+  end
+  dicelist = newlist
+  for i=1,#toRoll do
+    table.insert(dicelist, Dice(toRoll[i],math.random(400-96)+32, math.random(height-96)+32,math.random()*8-4,math.random()*8-4))
+  end
+    scorelist[3]:compare(dicelist)
 end
 
 
 
 function love.load()
+    -- printTable(scorelist)
     diceimage = love.graphics.newImage('assets/dicesix-sheet.png')
     local g = anim8.newGrid(32,32,diceimage:getWidth(), diceimage:getHeight())
     diceanim = anim8.newAnimation(g('1-13',1), 0.1)
@@ -111,19 +156,39 @@ function love.load()
     font = love.graphics.getFont()
     font2 = love.graphics.newFont(16)
     font3 = love.graphics.newFont(8)
-    table.insert(buttons, Button(0,32,32,32,reroll))
+    table.insert(buttons, Button(320-32,55,32,162,reroll))
     table.insert(buttons, Button(0,0,23,32,function()
       dicepage = dicepage - 1
       if (dicepage < 1) then
         dicepage = 1
       end
     end,love.graphics.newImage("assets/arrow.png"),math.pi))
-    table.insert(buttons, Button(330-32,0,dlistoff,32,function()
+    table.insert(buttons, Button(320-23,0,dlistoff,32,function()
       dicepage = dicepage + 1
       if (dicepage > math.ceil(#dicelist/8)) then
         dicepage = math.ceil(#dicelist/8)
       end
+      if (dicepage < 1) then -- this happens if #dicenum is 0, i.e. before rolling
+        dicepage = 1
+      end
     end,love.graphics.newImage("assets/arrow.png")))
+    table.insert(buttons, Button(320-32,23,23,32,function()
+      scorepage = scorepage - 1
+      if (scorepage < 1) then
+        scorepage = 1
+      end
+    end,love.graphics.newImage("assets/arrow.png"),math.pi*1.5))
+    table.insert(buttons, Button(320-23,240-23,23,32,function()
+      scorepage = scorepage + 1
+      if (scorepage > math.ceil(#dicelist/8)) then
+        scorepage = math.ceil(#dicelist/8)
+      end
+      if (scorepage < 1) then -- this happens if #dicenum is 0, i.e. before rolling
+        scorepage = 1
+      end
+    end,love.graphics.newImage("assets/arrow.png"),math.pi*0.5))
+  reroll()
+  --printTable(dicelist) -- 4 1 2 1 3
 end
 local touches = {}
 
@@ -147,10 +212,12 @@ end
 
 function love.update(dt)
   diceanim:update(dt)
+  settled = true -- presume dice are settled until we find one that isn't
   for i, v in pairs(dicelist) do
     v:update(dt)
+    if (v.height > 0) then settled = false end
   end
-  if (#touches >= 1) then
+  if (#touches >= 1) then -- only chek button press if screen is being touched
     for i, v in pairs(buttons) do
       if (touches[1].x >= v.x and touches[1].x <= v.x+v.w and touches[1].y >= v.y and touches[1].y < v.y + v.h) then
         v:click()
@@ -208,6 +275,10 @@ function love.draw(screen)
           end
         end
     end
+    love.graphics.print("Category", 0, 32)
+    for i=1,#scorelist do
+      scorelist[i]:draw(0,32+i*15)
+    end
     for id, touch in pairs(touches) do
         love.graphics.setColor(1,1,1,1)
         love.graphics.circle("fill", touch.x, touch.y, 5)
@@ -240,8 +311,9 @@ function love.draw(screen)
   love.graphics.draw(tablesprites[3],width,height-32,.5*math.pi,1,1,0,0)
   end
 
+  -- draw dice
   for i, v in pairs(dicelist) do
-    if (v.sides <= 12) then
+    if (v.sides <= 12) then -- i only drew 12 pips, use text for numbers larger than that
       diceanim:gotoFrame(v.side+1)
     else
       diceanim:gotoFrame(1)
@@ -252,7 +324,7 @@ function love.draw(screen)
       love.graphics.setFont(font2)
       love.graphics.print(tostring(v.side), v.x+16-(font2:getWidth(tostring(v.side))/2), v.y+16-(font2:getHeight(tostring(v.side))/2),0,1,1)
     end
-    if (multidice) then
+    if (multidice) then --if multiple types of dice, show the sides of that dice in the corner to differentiate them. Rerolling a 4 if it's a d4 vs a d6 is pretty big.
       love.graphics.setFont(font3)
       love.graphics.setColor(.5,0,0,1)  
       love.graphics.print(tostring(v.sides), v.x+30-(font3:getWidth(tostring(v.sides))), v.y+30-(font3:getHeight(tostring(v.sides))),0,1,1)     
@@ -263,6 +335,8 @@ function love.draw(screen)
       love.graphics.draw(diceoutline, v.x-1, v.y-1,0,1,1,0,0,0,0)
     end
   end
+  
+  -- Draw text/ui
   love.graphics.print(love.timer.getFPS(), 0,0)
   love.graphics.print(str, width/2 - font:getWidth(str)/2, height/2)
 end
