@@ -15,26 +15,179 @@ Dice:
 Scores: 
   - 3 of a kind: 
     Value: 0 
-    Sequence: x,x,x 
+    Sequence: '
+return function(dice)
+  list = {}
+  largest = 0
+  total = 0
+  for i, v in pairs(dice) do
+    total = total + v.side
+    if (list[v.side] == nil) then
+      largest = v.side
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+      largest = v.side
+    end
+  end
+  for i, v in pairs(list) do
+    if v > list[largest] then
+      largest = i
+    end
+  end
+  if list[largest] >= 3 then return total else return 0 end
+end
+    '
   - 4 of a kind:
     Value: 0
-    Sequence: x,x,x,x
+    Sequence: '
+return function(dice)
+  list = {}
+  largest = 0
+  total = 0
+  for i, v in pairs(dice) do
+    total = total + v.side
+    if (list[v.side] == nil) then
+      largest = v.side
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+      largest = v.side
+    end
+  end
+  for i, v in pairs(list) do
+    if v > list[largest] then
+      largest = i
+    end
+  end
+  if list[largest] >= 4 then return total else return 0 end
+end
+    '
   - Full House: 
     Value: 25
-    Sequence: x,x,y,y,y 
+    Sequence: '
+return function(dice)
+  list = {}
+  largest = 0
+  total = 0
+  size = 0
+  full = false
+  house = false
+  for i, v in pairs(dice) do
+    total = total + v.side
+    if (list[v.side] == nil) then
+      largest = v.side
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+      largest = v.side
+    end
+  end
+  for i, v in pairs(list) do
+    if v == 3 then
+      full = true
+    elseif v == 2 then
+      house = true
+    end
+  end
+  if (full and house) then return 25 else return 0 end
+end
+    '
   - Small Straight: 
     Value: 30
-    Sequence: x,x+1.x+2.x+3 
+    Sequence: '
+return function(dice)
+  list = {}
+  last = -1
+  length = 0 
+  longest = 0
+  for i, v in pairs(dice) do
+    if (list[v.side] == nil) then
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+    end
+  end
+  
+  for i, v in pairs(list) do
+    if (i == last+1) then
+      length = length + 1
+      if length > longest then longest = length end
+      last = i
+    else
+      length = 1
+      last = i
+    end
+  end
+  if (longest >= 4) then return 30 else return 0 end
+end
+    '
   - Large Straight: 
     Value: 40
-    Sequence: x,x+1.x+2.x+3,x+4
+    Sequence: '
+return function(dice)
+  list = {}
+  last = -1
+  length = 0 
+  longest = 0
+  for i, v in pairs(dice) do
+    if (list[v.side] == nil) then
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+    end
+  end
+  
+  for i, v in pairs(list) do
+    if (i == last+1) then
+      length = length + 1
+      if length > longest then longest = length end
+      last = i
+    else
+      length = 1
+      last = i
+    end
+  end
+  if (longest >= 5) then return 40 else return 0 end
+end
+    '
   - Yacht: 
     Value: 50
-    Sequence: x,x,x,x,x
+    Sequence: '
+return function(dice)
+  list = {}
+  largest = 0
+  total = 0
+  for i, v in pairs(dice) do
+    total = total + v.side
+    if (list[v.side] == nil) then
+      largest = v.side
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+      largest = v.side
+    end
+  end
+  for i, v in pairs(list) do
+    if v > list[largest] then
+      largest = i
+    end
+  end
+  if list[largest] >= 5 then return 50 else return 0 end
+end
+    '
     Bonus: 100
   - Chance: 
     Value: 0
-    Sequence: x
+    Sequence: '
+return function(dice)
+  total = 0
+  for i, v in pairs(dice) do
+    total = total + v.side
+  end
+  return total
+end
+    '
 Bonus: 
   Requirement: 63 
   Value: 35
@@ -94,7 +247,7 @@ local dlistoff = 27
 local tablesprites = {}
 local dicenums = {}
 local multidice = false
-local curplayer = 1
+local curplayer = 0
 local settled = false
 if (#set.Dice > 1) then multidice = true end
 for i, v in pairs(set.Dice) do
@@ -124,6 +277,8 @@ for i, v in pairs(set.Scores) do
 end
 
 function reroll()
+    --scorelist[1]:compare(dicelist)
+    --[[
   local newlist = {}
   local toRoll = {}
   if (#dicelist == 0) then toRoll = dicenums end
@@ -137,8 +292,7 @@ function reroll()
   dicelist = newlist
   for i=1,#toRoll do
     table.insert(dicelist, Dice(toRoll[i],math.random(400-96)+32, math.random(height-96)+32,math.random()*8-4,math.random()*8-4))
-  end
-    scorelist[3]:compare(dicelist)
+  end]]
 end
 
 
@@ -239,6 +393,7 @@ function love.update(dt)
 end
 
 function love.draw(screen)
+  --[[
   width, height = love.graphics.getDimensions(screen)
     if screen == "bottom" then
   --==============================
@@ -275,9 +430,11 @@ function love.draw(screen)
           end
         end
     end
+    
+    -- draw scoresheet --
     love.graphics.print("Category", 0, 32)
     for i=1,#scorelist do
-      scorelist[i]:draw(0,32+i*15)
+      scorelist[i]:draw(0,32+i*15, dicelist, settled, curplayer)
     end
     for id, touch in pairs(touches) do
         love.graphics.setColor(1,1,1,1)
@@ -290,7 +447,7 @@ function love.draw(screen)
   --==============================
   -- Top Screen
   --==============================
-  -- draw table
+  -- draw table --
   do
   for i=0,10 do
     for j=0,5 do
@@ -311,7 +468,7 @@ function love.draw(screen)
   love.graphics.draw(tablesprites[3],width,height-32,.5*math.pi,1,1,0,0)
   end
 
-  -- draw dice
+  -- draw dice --
   for i, v in pairs(dicelist) do
     if (v.sides <= 12) then -- i only drew 12 pips, use text for numbers larger than that
       diceanim:gotoFrame(v.side+1)
@@ -336,7 +493,8 @@ function love.draw(screen)
     end
   end
   
-  -- Draw text/ui
+  -- Draw text/ui --
   love.graphics.print(love.timer.getFPS(), 0,0)
   love.graphics.print(str, width/2 - font:getWidth(str)/2, height/2)
+  love.graphics.print("Settled: "..tostring(settled),0,16)]]
 end

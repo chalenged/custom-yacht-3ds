@@ -1,5 +1,5 @@
 Score = Object.extend(Object)
-
+local SEPERATOR = 32 --distance between each player's scores
 function Score.new(self, name, value, sequence, bonus, low)
   self.name = name
   self.value = value
@@ -31,38 +31,46 @@ function Score.compare(self, dlist)
   self.sequence:gsub("([%w])",function(c) table.insert(vars,c) end) -- get individual variables
   
   vars = remDupe(vars)
+  --print(self.sequence)
+  --return(load(self.sequence)()(dlist))
   
+  return 0
   -- Recursive function to check possible matches for the pattern. Probably a better way to do this, make a pr if you know any
-  function eval(tvars, tseq)
-    tvars = tvars or copy(vars)
-    tseq = tseq or copy(seq)
-    print("tseq:")
-    printTable(tseq)
-    local curvar = table.remove(tvars) --pop a variable, which one doesn't matter
-    for i, k in pairs(nonewlist) do
-      print(k.."huh"..#tvars)
-      --print(type(tseq))
-      for i=1, #tseq do
-        if (type(tseq[i])=="string") then tseq[i] = tseq[i]:gsub(curvar,k) end
-      end
-      if (#tvars == 0) then --if we have used all of the variables
-        local tlist = copy(dlist)
-        for i=1, #tseq do
-          tseq[i] = load("return "..tseq[i])()
-      print(tostring(i)..": "..type(tseq[i]))
-        end
-        return tseq
-      else
-        eval(copy(tvars),copy(tseq))
-      end
-      
-    end
-  end
-  printTable(eval())
-  --eval()
+  
+  
+--  function eval(tvars, tseq)
+--    list = {}
+--    tvars = tvars or copy(vars)
+--    tseq = tseq or copy(seq)
+--    --print("tseq:")
+--    --printTable(nonewlist)
+--    local curvar = table.remove(tvars) --pop a variable, which one doesn't matter
+--    for i, k in pairs(nonewlist) do -- for each unique number rolled
+--      print(k.."huh"..#tvars)
+--      --print(type(tseq))
+--      for i=1, #tseq do -- replace current variable letter with current number
+--        if (type(tseq[i])=="string") then tseq[i] = tseq[i]:gsub(curvar,k) end
+--      end
+--      if (#tvars == 0) then --if we have used all of the variables
+--        local tlist = copy(dlist)
+--        for i=1, #tseq do
+--          tseq[i] = load("return "..tseq[i])()
+--      --print(tostring(i)..": "..type(tseq[i]))
+--      end
+--        table.insert(list, tseq)
+--        return list
+--      else
+--        table.insert(list, eval(copy(tvars),copy(tseq)))
+--      end
+--    end
+--    return list
+--  end
+--  print("here:")
+--  printTable(eval())
+--  --eval()
 end
 
-function Score.draw(self, x,y)
+function Score.draw(self, x,y,dicelist,settled,curplayer)
   local oldcanvas = love.graphics.getCanvas()
   love.graphics.setCanvas(self.canvas)
   love.graphics.clear(0, 0, 0, 0)
@@ -75,4 +83,18 @@ function Score.draw(self, x,y)
   love.graphics.setColor(1, 1, 1, 1)
   love.graphics.draw(self.canvas, x,y)
   love.graphics.setBlendMode("alpha")
+  for i = 0, 5 do
+    if curplayer == i then
+      if self.scores[i] == nil then
+        if settled then
+          love.graphics.print(self:compare(dicelist),x+100+(i*SEPERATOR),y)
+        else
+          love.graphics.print("-",x+100+(i*SEPERATOR),y)        
+        end
+      else
+        love.graphics.print(self.scores[i],x+100+(i*SEPERATOR),y)
+        
+      end
+    end
+  end
 end

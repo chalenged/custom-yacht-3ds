@@ -1,13 +1,17 @@
 Button = Object.extend(Object)
-
+--Creates a button on the touch screen
 function Button.new(self, x,y,w,h,c,image,rotate)
+  --position, width, height
   self.x = x
   self.y = y
   self.w = w
   self.h = h
+  --a function the button will call when clicked
   self.c = c
   self.clicked = false
+  --if no image is provided a simple box is drawn
   self.image = image or nil
+  --rotates the image in 90 degree amounts, and uses radians
   self.rotate = rotate or 0
 end
 
