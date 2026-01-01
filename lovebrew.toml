@@ -1,0 +1,10 @@
+[metadata]
+title="Custom Yacht 3ds"
+author="chalenged"
+description="Yacht dice, but with customizable dice sets and scoresheets!"
+version="1.0.0"
+icons={ctr="yachticon.png"}
+[build]
+targets=["ctr"]
+source="game"
+packaged=true

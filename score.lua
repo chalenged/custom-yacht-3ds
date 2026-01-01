@@ -53,10 +53,10 @@ function Score.compare(self, dlist, player)
     end
     return total
   end
+  print(self.name)
   if self.tp == 2 then
     self.calc = numCalc(self.value)
   elseif self.tp == 1 then
-    print(self.name,self.sequence)
     self.calc = (loadstring(self.sequence)()(dlist))
   elseif self.tp == 3 then
     return 0

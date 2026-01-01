@@ -1,5 +1,4 @@
 require('/nest/nest').init({console = "3ds",scale = 1})
-require('hue')
 anim8 = require 'anim8/anim8'
 Object = require 'classic/classic'
 require 'dice'
@@ -217,7 +216,7 @@ end
 Bonus: 
   Requirement: 63 
   Value: 35
-Rolls: 3
+Rolls: 300
 ]])
 --
 function printTable(table, _count)
@@ -294,7 +293,7 @@ local joystick = nil
 --local tableCanvas = love.graphics.newCanvas(400,240)
 local firstDraw = true
 local scoreboard = Scoreboard()
-local rolls = 3
+local rolls = set.Rolls
 rolled = false
 totalPlayers = 0 -- add one for true number of players
 lastscored = -1
@@ -315,7 +314,7 @@ function loadYaml()
   curplayer = 0
   settled = false
   scoreboard = Scoreboard()
-  rolls = 3
+  rolls = set.Rolls
   rolled = false
   menu = false
   filemenu = false
@@ -505,8 +504,8 @@ function love.gamepadpressed(js, bt)
       if curfile <= filescroll then filescroll = filescroll - 1 end
     end
     if bt == "a" then
-      print(love.filesystem.read(yamls[curfile]))
-      set = yaml.eval(love.filesystem.read(yamls[curfile]))
+      print(love.filesystem.read("custom/"..yamls[curfile]))
+      set = yaml.eval(love.filesystem.read("custom/"..yamls[curfile]))
       loadYaml()
       
     end

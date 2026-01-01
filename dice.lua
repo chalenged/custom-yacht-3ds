@@ -1,7 +1,7 @@
 Dice = Object.extend(Object)
 
 function Dice.new(self, sides,x,y,xs,ys)
-  self.height = 7.5+math.random()*3 --"height" is basically a timer until the number is finalized
+  self.height = 0.25--7.5+math.random()*3 --"height" is basically a timer until the number is finalized
   self.sides = sides
   self.x = x
   self.y = y
