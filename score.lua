@@ -1,17 +1,30 @@
 Score = Object.extend(Object)
-local SEPERATOR = 32 --distance between each player's scores
-function Score.new(self, name, value, sequence, bonus, low)
+
+-- score types: {NORMAL = 1, NUMBER = 2, BONUS = 3, TOTAL = 4}
+
+function Score.new(self, name, value, sequence, bonus, low, tp)
   self.name = name
   self.value = value
   self.sequence = sequence
   self.bonus = bonus or 0
-  self.low = low or true -- false=high, true=low
-  self.canvas = love.graphics.newCanvas(100,15) -- canvas to prevent text spillover
+  if low == nil then low = true end
+  self.low = low -- false=high, true=low cirPrise 
+  self.tp = tp or 1
+  self.canvas = love.graphics.newCanvas(SCORE.NAMELEN,SCORE.HEIGHT) -- canvas to prevent text spillover
   self.scores = {}
+  if self.tp == 4 then
+    for i=0,5 do
+      self.scores[i] = 0
+    end
+  end
+  self.calc = -1
 end
 
-function Score.compare(self, dlist)
-  
+function Score.compare(self, dlist, player)
+  if (self.scores[player] ~= nil) then return self.scores[player] end
+  if self.calc ~= -1 then return self.calc end --cache the calculation to save processing power, the 3ds is weak
+  --print(self.name)
+  --[[
   local newlist, vars, seq = {}, {}, {} -- copy the dice list, so we can mess with it
   newlist = copy(dlist)
   --get the numbers that are in the dice list, without dupes, to speed up processing
@@ -31,10 +44,24 @@ function Score.compare(self, dlist)
   self.sequence:gsub("([%w])",function(c) table.insert(vars,c) end) -- get individual variables
   
   vars = remDupe(vars)
-  --print(self.sequence)
-  --return(load(self.sequence)()(dlist))
+  ]]
   
-  return 0
+  local function numCalc(num)
+    total = 0
+    for i, v in pairs(dlist) do
+      if v.side == num then total = total + num end
+    end
+    return total
+  end
+  if self.tp == 2 then
+    self.calc = numCalc(self.value)
+  elseif self.tp == 1 then
+    print(self.name,self.sequence)
+    self.calc = (loadstring(self.sequence)()(dlist))
+  elseif self.tp == 3 then
+    return 0
+  end
+  return self.calc
   -- Recursive function to check possible matches for the pattern. Probably a better way to do this, make a pr if you know any
   
   
@@ -70,7 +97,9 @@ function Score.compare(self, dlist)
 --  --eval()
 end
 
-function Score.draw(self, x,y,dicelist,settled,curplayer)
+function Score.draw(self, x,y,dicelist)
+  --[[
+  --Canvasses do not work properly on LovePotion 3.0.2, and this project crashes on newer dev builds, so canvasses are not available until a fix is pushed. They were here to prevent long names from going too long, but alas, long names will now go to long.
   local oldcanvas = love.graphics.getCanvas()
   love.graphics.setCanvas(self.canvas)
   love.graphics.clear(0, 0, 0, 0)
@@ -83,18 +112,42 @@ function Score.draw(self, x,y,dicelist,settled,curplayer)
   love.graphics.setColor(1, 1, 1, 1)
   love.graphics.draw(self.canvas, x,y)
   love.graphics.setBlendMode("alpha")
-  for i = 0, 5 do
-    if curplayer == i then
-      if self.scores[i] == nil then
-        if settled then
-          love.graphics.print(self:compare(dicelist),x+100+(i*SEPERATOR),y)
-        else
-          love.graphics.print("-",x+100+(i*SEPERATOR),y)        
-        end
-      else
-        love.graphics.print(self.scores[i],x+100+(i*SEPERATOR),y)
-        
-      end
+  ]]
+  
+  love.graphics.setColor(1, 1, 1, 1)
+  love.graphics.rectangle("line", x,y, SCORE.NAMELEN,SCORE.HEIGHT)
+  love.graphics.print(self.name,x,y)
+font = love.graphics.getFont()
+  
+  for i = 0, totalPlayers do
+    
+    if curplayer == i and self.scores[i] == nil and self.tp < 3 then
+      --printTable(playerColors)
+      local col = playerColors[curplayer+1]
+      love.graphics.setColor(col[1], col[2], col[3], 1)
+      love.graphics.rectangle("fill", x+SCORE.NAMELEN+(i*SCORE.SEPERATOR),y, SCORE.SEPERATOR,SCORE.HEIGHT)
+      love.graphics.setColor(1,1,1,1)
+    else
+      love.graphics.setColor(1,1,1,1)
     end
+    love.graphics.rectangle("line", x+SCORE.NAMELEN+(i*SCORE.SEPERATOR),y, SCORE.SEPERATOR,SCORE.HEIGHT)
+    if self.scores[i] == nil then
+      if settled and curplayer == i then
+        local strr = self:compare(dicelist,i)
+        love.graphics.print(strr,x+SCORE.NAMELEN+(i*SCORE.SEPERATOR)+SCORE.SEPERATOR/2-(font:getWidth(strr)/2),y+2)
+      else
+        if not settled then self.calc = -1 end
+        love.graphics.print("-",x+SCORE.NAMELEN+(i*SCORE.SEPERATOR)+SCORE.SEPERATOR/2-(font:getWidth("-")/2),y+2)        
+      end
+    else
+      love.graphics.print(self.scores[i],x+SCORE.NAMELEN+(i*SCORE.SEPERATOR)+SCORE.SEPERATOR/2-(font:getWidth(self.scores[i])/2),y+2)
+      
+    end
+    love.graphics.setColor(1,1,1,1)
+    
   end
+    love.graphics.setColor(1,1,1,1)
+  
 end
+
+--function Score.select

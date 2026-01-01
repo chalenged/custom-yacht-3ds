@@ -1,29 +1,211 @@
-Dice: #Your set of dice, can include any sided dice of at least 2, and you can mix and match (i.e. 2d4 and 3d6)
-  - 6: 5 # The number of faces on the dice, and the number of that dice, so this is 5 six-sided dice
-Scores: #The types of scores you can get, each requires a Value and a Sequence
-  - 3 of a kind:
-    - Value: 0 #Value of 0 means the total value on all dice. Value of -1 means the total value of matching dice, with the highest match being prioritized
-    - Sequence: x,x,x #Sequence is the sequence required, with letters as the substitues. Seperate each required dice with a comma, so this is 3 of the same number.
+# The list of dice to use
+Dice: 
+  # The first number is the number of sides, the second is the number of that dice, so this is 5 d6, or 5 six-sided dies
+  - 6: 5
+# The list of scores
+Scores: 
+  # Each score has a name that is displayed in the scoresheet. Long names will go too long (canvasses are broken and i don't feel like figuring something else out. I will try to fix when canvasses get fixed)
+  - 3 of a kind: 
+    # The sequence is the lua function that will be called when determining score. It will recieve the dice as a list, the main attribute of the dice that matters is "side". Do NOT modify the dice list or dice themselves. You can check the dice.lua file for more attributes. These examples should help you create more.
+    Sequence: '
+return function(dice)
+  list = {}
+  largest = 0
+  total = 0
+  for i, v in pairs(dice) do
+    total = total + v.side
+    if (list[v.side] == nil) then
+      largest = v.side
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+      largest = v.side
+    end
+  end
+  for i, v in pairs(list) do
+    if v > list[largest] then
+      largest = i
+    end
+  end
+  if list[largest] >= 3 then return total else return 0 end
+end
+    '
   - 4 of a kind:
-    - Value: 0
-    - Sequence: x,x,x,x
-  - Full House:
-    - Value: 25
-    - Sequence: x,x,y,y,y #You can use different letters for different numbers, so this is 2 of the same and 3 of the same
-  - Small Straight:
-    - Value: 30
-    - Sequence: x,x+1.x+2.x+3 #Sequences can also use addition and multiplication (no subtraction, division, or anything else. This is yacht...)
-  - Large Straight:
-    - Value: 40
-    - Sequence: x,x+1.x+2.x+3,x+4
-  - Yacht:
-    - Value: 50
-    - Sequence: x,x,x,x,x
-    - Bonus: 100 #Optional attribute Bonus is how many points you get for each subsequent score. Ignored if not present.
-  - Chance:
-    - Value: 0
-    - Sequence: x
-Bonus: #This is the bonus for singular dice.
-  - Requirement: 63 #You need this much total at least in the singular number section to get the value.
-  - Value: 35
-Rolls: 3 #Number of rolls the player can perform for each round. This includes the initial roll. Set to 0 for infinite (funny)
+    Sequence: '
+return function(dice)
+  list = {}
+  largest = 0
+  total = 0
+  for i, v in pairs(dice) do
+    total = total + v.side
+    if (list[v.side] == nil) then
+      largest = v.side
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+      largest = v.side
+    end
+  end
+  for i, v in pairs(list) do
+    if v > list[largest] then
+      largest = i
+    end
+  end
+  if list[largest] >= 4 then return total else return 0 end
+end
+    '
+  - Full House: 
+    Sequence: '
+return function(dice)
+  list = {}
+  largest = 0
+  total = 0
+  size = 0
+  full = false
+  house = false
+  for i, v in pairs(dice) do
+    total = total + v.side
+    if (list[v.side] == nil) then
+      largest = v.side
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+      largest = v.side
+    end
+  end
+  for i, v in pairs(list) do
+    if v == 3 then
+      full = true
+    elseif v == 2 then
+      house = true
+    end
+  end
+  if (full and house) then return 25 else return 0 end
+end
+    '
+  - Small Straight: 
+    Sequence: '
+return function(dice)
+  list = {}
+  last = -1
+  length = 0 
+  longest = 0
+  for i, v in pairs(dice) do
+    if (list[v.side] == nil) then
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+    end
+  end
+  --this function comes from https://www.lua.org/pil/19.3.html 
+  function pairsByKeys (t, f)
+    local a = {}
+    for n in pairs(t) do table.insert(a, n) end
+    table.sort(a, f)
+    local i = 0      -- iterator variable
+    local iter = function ()   -- iterator function
+      i = i + 1
+      if a[i] == nil then return nil
+      else return a[i], t[a[i] ]
+      end
+    end
+    return iter
+  end
+  for i, v in pairs(list) do
+    if (i == last+1) then
+      length = length + 1
+      if length > longest then longest = length end
+      last = i
+    else
+      length = 1
+      last = i
+    end
+  end
+  if (longest >= 4) then return 30 else return 0 end
+end
+    '
+  - Large Straight: 
+    Sequence: '
+return function(dice)
+  list = {}
+  last = -1
+  length = 0 
+  longest = 0
+  for i, v in pairs(dice) do
+    if (list[v.side] == nil) then
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+    end
+  end
+  --this function comes from https://www.lua.org/pil/19.3.html 
+  function pairsByKeys (t, f)
+    local a = {}
+    for n in pairs(t) do table.insert(a, n) end
+    table.sort(a, f)
+    local i = 0      -- iterator variable
+    local iter = function ()   -- iterator function
+      i = i + 1
+      if a[i] == nil then return nil
+      else return a[i], t[a[i] ]
+      end
+    end
+    return iter
+  end
+  for i, v in pairs(list) do
+    if (i == last+1) then
+      length = length + 1
+      if length > longest then longest = length end
+      last = i
+    else
+      length = 1
+      last = i
+    end
+  end
+  if (longest >= 5) then return 40 else return 0 end
+end
+    '
+  - Yacht: 
+    Sequence: '
+return function(dice)
+  list = {}
+  largest = 0
+  total = 0
+  for i, v in pairs(dice) do
+    total = total + v.side
+    if (list[v.side] == nil) then
+      largest = v.side
+      list[v.side] = 1
+    else
+      list[v.side] = list[v.side] + 1
+      largest = v.side
+    end
+  end
+  for i, v in pairs(list) do
+    if v > list[largest] then
+      largest = i
+    end
+  end
+  if list[largest] >= 5 then return 50 else return 0 end
+end
+    '
+    # The bonus attribute determines how many bonus points the player should get each time they get this sequence after the first. They do not get it if they got a 0 on this or didn't score on it. They still have to place their score somewhere else, "Joker" rules are not implimented. If no bonus attribute is set, it will not get a bonus. Generally meant for the yacht itself, or a very unlikely "hand"
+    Bonus: 100
+  - Chance: 
+    Sequence: '
+return function(dice)
+  total = 0
+  for i, v in pairs(dice) do
+    total = total + v.side
+  end
+  return total
+end
+    '
+# This determines the bonus from the number scores. The number scores are automatically generated, do not add them to the yaml. They are created based on the largest dice size (i.e. it will be 12 if there's a twelve-sided dice and 5 six-sided dice)
+Bonus: 
+  # Requirement is the total you have to reach with the number scores in order to get the bonus
+  Requirement: 63 
+  # Bonus is how many points you get if your total from the number scores meets the requirement
+  Value: 35
+#This is how many rolls each player gets each round, including their initial roll, so 3 means they each get 2 rerolls.
+Rolls: 3

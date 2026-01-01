@@ -1,6 +1,6 @@
 Button = Object.extend(Object)
 --Creates a button on the touch screen
-function Button.new(self, x,y,w,h,c,image,rotate)
+function Button.new(self, x,y,w,h,c,image,rotate,menubutton)
   --position, width, height
   self.x = x
   self.y = y
@@ -13,6 +13,7 @@ function Button.new(self, x,y,w,h,c,image,rotate)
   self.image = image or nil
   --rotates the image in 90 degree amounts, and uses radians
   self.rotate = rotate or 0
+  self.menubutton = menubutton or false
 end
 
 function Button.click(self)
@@ -38,5 +39,9 @@ function Button.draw(self)
     dy = dy + self.h
   end
       love.graphics.setColor(1,1,1,1)
-  love.graphics.draw(self.image,dx,dy,self.rotate,1,1,0,0)
+  if self.image:type() == "Quad" then
+    love.graphics.draw(playerbuttonsimg,self.image,dx,dy,self.rotate,1,1,0,0)
+  else
+    love.graphics.draw(self.image,dx,dy,self.rotate,1,1,0,0)
+  end
 end
