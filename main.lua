@@ -216,7 +216,7 @@ end
 Bonus: 
   Requirement: 63 
   Value: 35
-Rolls: 300
+Rolls: 3
 ]])
 --
 function printTable(table, _count)
@@ -297,7 +297,7 @@ local rolls = set.Rolls
 rolled = false
 totalPlayers = 0 -- add one for true number of players
 lastscored = -1
-playerColors = {{0.4, 0.1, 0.1},{0.1, 0.4, 0.1},{0.1, 0.1, 0.4},{0.4, 0.4, 0.1},{0.4, 0.1, 0.4},{0.1, 0.4, 0.4}}
+playerColors = {{0.4, 0.1, 0.1},{0.1, 0.4, 0.1},{0.1, 0.1, 0.4},{0.4, 0.4, 0.1},{0.4, 0.1, 0.4},{0.1, 0.4, 0.4}} --makes each player have a different color
 menu=true
 playermenu = false
 filemenu = true
@@ -306,7 +306,6 @@ local curfile = 1
 local filescroll = 0
 
 function loadYaml()
-  if #yamls == 0 then return 0 end
   dicelist, scorelist = {}, {}
   dicepage, scorepage = 1, 1
   dicenums = {}
@@ -340,7 +339,7 @@ function loadYaml()
       local name = j
       local value = 0
       local bonus = 0
-      local sequence = "return function return -1 end" -- initialize to -1 to make error obvious
+      local sequence = "return function() return -1 end" -- initialize to -1 to make error obvious
       --print(i)
       for k, x in pairs(set.Scores[i][j]) do
         if k == "Sequence" then sequence = x
@@ -358,21 +357,21 @@ function loadYaml()
   scoreboard:add(Score("total",4,"return function() return -1 end", nil, true, 4))
 
 end
-loadYaml()
+loadYaml() --loads the embedded yaml
 menu=true
 playermenu = true
 filemenu = false
-function reroll()
-    --scorelist[1]:compare(dicelist)
+function reroll() --rerolls the dice, keeping selected dice from being rerolled
   if rolls <= 0 then return 0 end
-  if rolled == true and not settled then return 0 end
+  if rolled == true and not settled then return 0 end --ensures dice are not being rolled still to prevent double-taps
   rolled = true
   rolls = rolls - 1
-  local newlist = {}
+  local newlist = {} 
   local toRoll = {}
   if (#dicelist == 0) then toRoll = dicenums end
+  --add selected dice to the temporary newlist, then reroll the unselected dice.
   for i=1,#dicelist do
-    if (dicelist[i].selected) then
+    if (dicelist[i].selected) then 
       table.insert(newlist,dicelist[i])
     else 
       table.insert(toRoll, dicelist[i].sides)
@@ -387,7 +386,7 @@ end
 
 
 function love.load()
-    -- printTable(scorelist)
+    --mostly responsible for loading textures and buttons
     local joysticks = love.joystick.getJoysticks()
     joystick = joysticks[1]
     diceimage = love.graphics.newImage('assets/dicesix-sheet.png')
@@ -424,56 +423,29 @@ function love.load()
       end
     end,love.graphics.newImage("assets/arrow.png")))
     table.insert(buttons, Button(320-32,23,32,32,function()
-          --[[
-      scorepage = scorepage - 1
-      if (scorepage < 1) then
-        scorepage = 1
-      end
-      ]]
       scoreboard:up()
     end,love.graphics.newImage("assets/arrow.png"),math.pi*1.5))
     table.insert(buttons, Button(320-32,240-23,32,32,function()
-      --[[
-      scorepage = scorepage + 1
-      if (scorepage > math.ceil(#dicelist/8)) then
-        scorepage = math.ceil(#dicelist/8)
-      end
-      if (scorepage < 1) then -- this happens if #dicenum is 0, i.e. before rolling
-        scorepage = 1
-      end
-      ]]
       scoreboard:down()
     end,love.graphics.newImage("assets/arrow.png"),math.pi*0.5))
-    for i=1,6 do
+    for i=1,6 do --creates the player buttons
       table.insert(buttons, Button(35+math.fmod(i+1,2)*130,35+math.floor((i-1)/2)*60,120,50,function() 
             totalPlayers = i-1
             playermenu = false
             menu = false
             end, playerbuttons[i], 0, true))
-    end
-    --[[
-    for i=1,6 do
-      love.graphics.setColor(0.8,0.8,0.8,1)
-      love.graphics.setFont(font4)
-      love.graphics.rectangle("fill",35+math.fmod(i+1,2)*130,35+math.floor((i-1)/2)*60,120,50)
-      love.graphics.setColor(0,0,0,1)
-      love.graphics.print(tostring(i),35+math.fmod(i+1,2)*130+55,40+math.floor((i-1)/2)*60)
-      love.graphics.setFont(font)
-    end
-    ]]
-  --reroll()
-  --printTable(dicelist) -- 4 1 2 1 3
-  
+    end  
 end
 local touches = {}
 
 function love.touchpressed(id, x, y, dx, dy, pressure)
+    --id from the 3ds is not a number, it's a userdata, but it still works as a key for a table
     if touches[id] == nil then touches[id] = {x = x, y = y} end
-    --print(tostring(id[1])..","..tostring(pressure))
 end
 
 function love.touchreleased(id, x, y, dx, dy, pressure)
     touches[id] = nil
+    --this ensures dice are only toggled when tapped, not repeteadly while tapped. Same for buttons and scoreboard
     for i=1,#dicelist do
       dicelist[i].selecting = false
     end
@@ -489,7 +461,7 @@ end
 
 function love.gamepadpressed(js, bt)
   if bt == "start" then love.event.quit() end
-  if (bt == "select" or bt == "back") and not menu then 
+  if (bt == "select" or bt == "back") and not menu and #yamls > 0 then 
     menu = true
     filemenu = true
   end
@@ -520,13 +492,13 @@ function love.update(dt)
     if (v.height > 0) then settled = false end
   end
   if rolled == false then settled = false end
-  for id, _v in pairs(touches) do -- only chek button press if screen is being touched
+  for id, _v in pairs(touches) do -- only chek button press if screen is being touched. Again, on 3ds id will be userdata instead of a number, but it still works as a key
     
     if playermenu then
       
     end
     
-    if touches[id].x < 320-32 and touches[id].y > 35 and not menu then
+    if touches[id].x < 320-32 and touches[id].y > 35 and not menu then --if the touch was in the scoreboard area, delegate the press to the scoreboard. Move to the next player/turn if a score was added
       if (scoreboard:press(touches[id].x,touches[id].y,dicelist)) then
         scoreboard:update(dicelist)
         curplayer = curplayer + 1
@@ -542,7 +514,7 @@ function love.update(dt)
     
     -- button press checks
     for i, v in pairs(buttons) do
-      if (touches[id].x >= v.x and touches[id].x <= v.x+v.w and touches[id].y >= v.y and touches[id].y < v.y + v.h) and (menu == v.menubutton) then
+      if (touches[id].x >= v.x and touches[id].x <= v.x+v.w and touches[id].y >= v.y and touches[id].y < v.y + v.h) and (menu == v.menubutton) then --menubuttons only work in menus, and non-menu buttons only work out of menus
         v:click()
       end
     end
@@ -563,6 +535,7 @@ function love.update(dt)
 end
 
 function love.draw(screen)
+  --set base color, i think that the 3ds does not reset color by default or something. It was all red before.
   love.graphics.setColor(1,1,1,1)
   
   width, height = love.graphics.getDimensions(screen)
@@ -575,7 +548,7 @@ function love.draw(screen)
     
     -- draw scoresheet here, to draw over it at the top of the screen
     scoreboard:draw(dicelist)
-    
+    -- draw over the scoreboard under the dice selection area. I would use a canvas but they are broken in current release, and the newest dev release crashed every time.
     love.graphics.setColor(0.6470588,0.6470588,0.6470588,1)
     love.graphics.rectangle("fill",0,0,width,35)
     
@@ -584,6 +557,7 @@ function love.draw(screen)
         v:draw()
       end
     end
+    -- consider refactoring this to the dice object, it's needlessly messy out here in draw.
     for i, v in pairs(dicelist) do
         if (i <= dicepage*8 and i > (dicepage-1)*8) then
           if (v.sides <= 12) then
@@ -611,13 +585,13 @@ function love.draw(screen)
         end
     end
     
-    -- draw scoresheet --
-    --love.graphics.print("Category", 0, 32)
+    --draw a white circle where you touched, for visual feedback
     for id, touch in pairs(touches) do
         love.graphics.setColor(1,1,1,1)
         love.graphics.circle("fill", touch.x, touch.y, 2)
         --love.graphics.print(touch.x..", "..touch.y,touch.x+5,touch.y-5)
     end
+    --draw the player selection menu. This draws the buttons again i guess.
     if menu then
       love.graphics.setColor(0,0,0,0.5)
       love.graphics.rectangle("fill",0,0,width,height)
@@ -633,14 +607,7 @@ function love.draw(screen)
             v:draw()
           end
         end
-        for i=1,6 do
-          --[[
-          love.graphics.setColor(0.8,0.8,0.8,1)
-          love.graphics.setFont(font4)
-          love.graphics.rectangle("fill",35+math.fmod(i+1,2)*130,35+math.floor((i-1)/2)*60,120,50)
-          love.graphics.setColor(0,0,0,1)
-          love.graphics.print(tostring(i),35+math.fmod(i+1,2)*130+55,40+math.floor((i-1)/2)*60)
-          ]]
+        for i=1,6 do --really set the font i guess
           love.graphics.setFont(font)
           
         end
@@ -675,6 +642,7 @@ function love.draw(screen)
     love.graphics.draw(tablesprites[3],32,height,math.pi,1,1,0,0)
     love.graphics.draw(tablesprites[3],width,height-32,.5*math.pi,1,1,0,0)
   end
+  
   -- draw dice --
   for i, v in pairs(dicelist) do
     if (v.sides <= 12) then -- i only drew 12 pips, use text for numbers larger than that
@@ -706,7 +674,7 @@ function love.draw(screen)
   local rollheight = (font:getHeight(str))
   love.graphics.print(str, width/2 - font:getWidth(str)/2, height-rollheight)
   str = "Player: " .. curplayer+1
-  love.graphics.print(str, 0.5+width/2 - font:getWidth(str)/2, height-(font:getHeight(str))-rollheight)
+  love.graphics.print(str, 0.5+width/2 - font:getWidth(str)/2, height-(font:getHeight(str))-rollheight) --offset by 0.5 pixels, otherwise the "l" didn't render on my 3ds, presumably it's too thin
   --love.graphics.print("Settled: "..tostring(settled),0,16)
   
   -- Draw file menu

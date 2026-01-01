@@ -24,11 +24,12 @@ function Button.click(self)
 end
 
 function Button.draw(self)
-  if (self.image==nil) then 
+  if (self.image==nil) then --default to a red box (for developing)
       love.graphics.setColor(0.7,0,0,1)
       love.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
       return
   end
+  --rotate in 90 degree amounts. I didn't feel like making them rotate more precisely, also i think it's bugged but it works fine for the game
   dx, dy = self.x, self.y
   if self.rotate == 0.5*math.pi then
     dx = dx + self.w
@@ -39,7 +40,7 @@ function Button.draw(self)
     dy = dy + self.h
   end
       love.graphics.setColor(1,1,1,1)
-  if self.image:type() == "Quad" then
+  if self.image:type() == "Quad" then --Currently quads are only used for the player select buttons, so it's hardcoded
     love.graphics.draw(playerbuttonsimg,self.image,dx,dy,self.rotate,1,1,0,0)
   else
     love.graphics.draw(self.image,dx,dy,self.rotate,1,1,0,0)

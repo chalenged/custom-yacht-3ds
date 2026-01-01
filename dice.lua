@@ -1,8 +1,8 @@
 Dice = Object.extend(Object)
 
 function Dice.new(self, sides,x,y,xs,ys)
-  self.height = 0.25--7.5+math.random()*3 --"height" is basically a timer until the number is finalized
-  self.sides = sides
+  self.height = 7.5+math.random()*3 --"height" is basically a timer until the number is finalized
+  self.sides = sides --number of sides the dice has, not side it is currently showing
   self.x = x
   self.y = y
   --Velocities

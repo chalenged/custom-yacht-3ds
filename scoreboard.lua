@@ -2,7 +2,7 @@ Scoreboard = Object.extend(Object)
 
 function Scoreboard.new(self)
   self.scorelist = {}
-  self.scroll = 0
+  self.scroll = 0 --how many entries the user has scrolled downwards
   self.limit = 0
   self.pressed = false
 end
@@ -24,25 +24,22 @@ function Scoreboard.draw(self, dicelist)
 end
 
 function Scoreboard.press(self,x,y)
-  if not self.pressed then 
+  if not self.pressed then --ensures there's no double taps
     if x > SCORE.NAMELEN then
+      --calculate the player and ensure they're playing
       player = math.floor((x - SCORE.NAMELEN)/SCORE.SEPERATOR)
       if player > totalPlayers then return false end
-      --print(player)
     end
+    --calculate the score number and ensure it's valid
     scorenum = math.floor((y - 35 + self.scroll*SCORE.HEIGHT)/SCORE.HEIGHT) + 1
-    --print(player,scorenum,#self.scorelist)
     if (#self.scorelist >= scorenum) then
-      --print("test",self.scorelist[scorenum].calc)
       local score=self.scorelist[scorenum]
-      --print(score.scores[player],": ",player,": ",curplayer)
-      if (score.scores[player] == nil and curplayer == player and settled and score.tp < 3) then
+      if (score.scores[player] == nil and curplayer == player and settled and score.tp < 3) then --ensure it's valid to score
         score.scores[player] = score:compare(dicelist,curplayer)
         lastscored = scorenum
         return true
       end
     end
-    --print (scorenum)
     self.pressed = true
   end
   return false
@@ -59,14 +56,13 @@ function Scoreboard.up(self)
   
 end
 
-function Scoreboard.update(self,dlist)
-    local totalhigh = 0
-    local total = 0
+function Scoreboard.update(self,dlist) --mostly updates the total and bonus scores, as they rely on other scores to be calculated
+  local totalhigh = 0
+  local total = 0
   for i=1,#self.scorelist do
     local cs = self.scorelist[i]
     if cs.tp == 3 then
       if not cs.low then
-        --print(cs.name,cs.bonus,cs.value,totalhigh)
         if totalhigh >= cs.bonus then
           cs.scores[curplayer] = cs.value
         end
@@ -84,6 +80,5 @@ function Scoreboard.update(self,dlist)
     end
     if cs.tp == 4 then cs.scores[curplayer] = total
     end
-    --print(cs.low,cs.name,cs.tp,cs.scores[curplayer],total,totalhigh)
   end
 end
