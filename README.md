@@ -2,6 +2,8 @@
 A customizable yacht dice game for the 3ds using lovepotion!
 You can create your own dice sets and scoresheets with a yaml file, place it in the same directory as the game for PC, and in `sdmc:/3ds/custom-yacht-3ds`. See the [default.yaml](https://github.com/chalenged/custom-yacht-3ds/blob/main/default.yaml) file for an example with comments.
 
+![image](https://raw.githubusercontent.com/chalenged/custom-yacht-3ds/refs/heads/main/screenshot1.png)
+
 # Controls
 The game is mostly self-explanatory with touch controls, however the following are physical button controls:
 Start: Exit the game
